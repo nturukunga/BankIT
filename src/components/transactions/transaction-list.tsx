@@ -130,9 +130,11 @@ export default function TransactionList({
                       {Number(transaction.amount) >= 0 ? '+' : ''}{formatCurrency(transaction.amount)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <span className="font-medium">{transaction.Card?.name || 'Unknown Card'}</span>
+                      <span className="font-medium">{transaction.Card?.name || transaction.card?.name || 'Unknown Card'}</span>
                       <span className="text-muted-foreground block text-xs">
-                        {transaction.Card?.number ? transaction.Card.number.slice(-4) : 'xxxx'}
+                        {(transaction.Card?.number && transaction.Card.number.slice(-4)) || 
+                         (transaction.card?.number && transaction.card.number.slice(-4)) || 
+                         'xxxx'}
                       </span>
                     </TableCell>
                     <TableCell className="hidden md:table-cell max-w-[200px] truncate">
