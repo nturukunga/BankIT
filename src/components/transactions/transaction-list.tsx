@@ -27,12 +27,18 @@ const transactionTypeIcons = {
   deposit: <ArrowDownCircle className="h-4 w-4 text-emerald-500" />,
   withdrawal: <ArrowUpCircle className="h-4 w-4 text-rose-500" />,
   transfer: <ArrowRightCircle className="h-4 w-4 text-blue-500" />,
+  expense: <ArrowUpCircle className="h-4 w-4 text-rose-500" />,
+  income: <ArrowDownCircle className="h-4 w-4 text-emerald-500" />,
+  savings: <ArrowRightCircle className="h-4 w-4 text-blue-500" />,
 }
 
 const transactionTypeColors = {
   deposit: 'bg-emerald-100 text-emerald-800',
   withdrawal: 'bg-rose-100 text-rose-800',
   transfer: 'bg-blue-100 text-blue-800',
+  expense: 'bg-rose-100 text-rose-800',
+  income: 'bg-emerald-100 text-emerald-800',
+  savings: 'bg-blue-100 text-blue-800',
 }
 
 type TransactionListProps = {
@@ -55,8 +61,15 @@ export default function TransactionList({
   const totalPages = Math.ceil(totalCount / pageSize)
 
   // Format the transaction date
-  const formatTransactionDate = (date: Date) => {
-    return formatDistanceToNow(new Date(date), { addSuffix: true })
+  const formatTransactionDate = (dateStr?: string) => {
+    if (!dateStr) return 'Unknown date';
+    
+    try {
+      return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+    } catch (error) {
+      console.error('Invalid date:', dateStr);
+      return 'Invalid date';
+    }
   }
 
   return (
@@ -105,19 +118,21 @@ export default function TransactionList({
                   <TableRow key={transaction.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {transactionTypeIcons[transaction.type as keyof typeof transactionTypeIcons]}
-                        <Badge className={transactionTypeColors[transaction.type as keyof typeof transactionTypeColors]}>
+                        {transactionTypeIcons[transaction.type as keyof typeof transactionTypeIcons] || 
+                          transactionTypeIcons.transfer}
+                        <Badge className={transactionTypeColors[transaction.type as keyof typeof transactionTypeColors] || 
+                          transactionTypeColors.transfer}>
                           {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                         </Badge>
                       </div>
                     </TableCell>
-                    <TableCell className={transaction.type === 'deposit' ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
-                      {transaction.type === 'deposit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    <TableCell className={Number(transaction.amount) >= 0 ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
+                      {Number(transaction.amount) >= 0 ? '+' : ''}{formatCurrency(transaction.amount)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <span className="font-medium">{transaction.card.name}</span>
+                      <span className="font-medium">{transaction.Card?.name || 'Unknown Card'}</span>
                       <span className="text-muted-foreground block text-xs">
-                        {transaction.card.number.slice(-4)}
+                        {transaction.Card?.number ? transaction.Card.number.slice(-4) : 'xxxx'}
                       </span>
                     </TableCell>
                     <TableCell className="hidden md:table-cell max-w-[200px] truncate">
@@ -129,7 +144,7 @@ export default function TransactionList({
                       )}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-muted-foreground">
-                      {formatTransactionDate(transaction.createdAt)}
+                      {formatTransactionDate(transaction.createdAt || transaction.date)}
                     </TableCell>
                   </TableRow>
                 ))}

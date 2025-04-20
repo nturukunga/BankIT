@@ -118,67 +118,84 @@ export async function createTransaction(
   return data;
 }
 
+/**
+ * Get transaction statistics for a user
+ */
 export async function getTransactionStats(
   userId: string,
   days: number = 30
 ): Promise<{
-  totalDeposits: number
-  totalWithdrawals: number
-  totalTransactions: number
-  recentActivity: Transaction[]
+  totalDeposits: number;
+  totalWithdrawals: number;
+  totalTransactions: number;
+  recentActivity: Transaction[];
 }> {
-  const today = new Date()
-  const startDate = new Date(today)
-  startDate.setDate(today.getDate() - days)
-
-  const [deposits, withdrawals, total, recentActivity] = await Promise.all([
-    db.transaction.aggregate({
-      where: {
-        userId,
-        type: "deposit",
-        createdAt: {
-          gte: startDate,
-        },
-      },
-      _sum: {
-        amount: true,
-      },
-    }),
-    db.transaction.aggregate({
-      where: {
-        userId,
-        type: "withdrawal",
-        createdAt: {
-          gte: startDate,
-        },
-      },
-      _sum: {
-        amount: true,
-      },
-    }),
-    db.transaction.count({
-      where: {
-        userId,
-        createdAt: {
-          gte: startDate,
-        },
-      },
-    }),
-    db.transaction.findMany({
-      where: {
-        userId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 5,
-    }),
-  ])
-
-  return {
-    totalDeposits: deposits._sum.amount || 0,
-    totalWithdrawals: withdrawals._sum.amount || 0,
-    totalTransactions: total,
-    recentActivity,
+  const uuidUserId = ensureUuid(userId);
+  
+  // Calculate the date range (last X days)
+  const endDate = new Date().toISOString();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startDateString = startDate.toISOString();
+  
+  // Get deposits sum
+  const { data: deposits, error: depositsError } = await supabase
+    .from("Transaction")
+    .select("amount")
+    .eq("userId", uuidUserId)
+    .eq("type", "deposit")
+    .gte("createdAt", startDateString)
+    .lte("createdAt", endDate);
+    
+  if (depositsError) {
+    console.error("Error fetching deposits:", depositsError);
   }
+  
+  // Get withdrawals sum
+  const { data: withdrawals, error: withdrawalsError } = await supabase
+    .from("Transaction")
+    .select("amount")
+    .eq("userId", uuidUserId)
+    .eq("type", "withdrawal")
+    .gte("createdAt", startDateString)
+    .lte("createdAt", endDate);
+    
+  if (withdrawalsError) {
+    console.error("Error fetching withdrawals:", withdrawalsError);
+  }
+  
+  // Get total transaction count
+  const { count, error: countError } = await supabase
+    .from("Transaction")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", uuidUserId)
+    .gte("createdAt", startDateString)
+    .lte("createdAt", endDate);
+    
+  if (countError) {
+    console.error("Error fetching transaction count:", countError);
+  }
+  
+  // Get recent activity
+  const { data: recentActivity, error: recentError } = await supabase
+    .from("Transaction")
+    .select("*")
+    .eq("userId", uuidUserId)
+    .order("createdAt", { ascending: false })
+    .limit(5);
+    
+  if (recentError) {
+    console.error("Error fetching recent activity:", recentError);
+  }
+  
+  // Calculate total deposits and withdrawals
+  const totalDeposits = deposits?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
+  const totalWithdrawals = withdrawals?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
+  
+  return {
+    totalDeposits,
+    totalWithdrawals,
+    totalTransactions: count || 0,
+    recentActivity: recentActivity as Transaction[] || [],
+  };
 }
