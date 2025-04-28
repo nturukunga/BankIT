@@ -136,7 +136,7 @@ export async function middleware(request: NextRequest) {
     })
 
     // Check if token is valid and not expired
-    const isValidToken = token && token.exp && Date.now() < token.exp * 1000
+    const isValidToken = token && token.exp && (Date.now() < token.exp * 1000)
 
     // Redirect to login if accessing a protected route without authentication
     if (!isValidToken && !isPublicPath) {
@@ -144,6 +144,11 @@ export async function middleware(request: NextRequest) {
       const url = new URL("/auth", request.url)
       url.searchParams.set("from", pathname)
       return NextResponse.redirect(url)
+
+       // Clear invalid cookies
+      const response = NextResponse.redirect(url)
+      response.cookies.delete('next-auth.session-token')
+       return response
     }
 
     // Auth page handling - prevent the redirect loop

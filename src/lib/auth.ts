@@ -4,6 +4,9 @@ import GoogleProvider from "next-auth/providers/google"
 import { supabase } from "./supabase"
 import { getUserByEmail } from "./auth-helpers"
 import { ensureUuid } from "./utils"
+import { createClient } from '@supabase/supabase-js'
+import type { User } from '@/types/next-auth'
+import { getToken } from "next-auth/jwt"
 
 // Mark as dynamic to avoid build issues
 export const dynamic = 'force-dynamic'
@@ -26,7 +29,8 @@ export const authOptions: NextAuthOptions = {
         params: {
           prompt: "select_account",
           access_type: "offline",
-          response_type: "code"
+          response_type: "code",
+          redirect_uri: process.env.NEXTAUTH_URL + "/api/auth/callback/google"
         }
       }
     }),
@@ -154,7 +158,15 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           // First check if user exists in our database
           let dbUser = await getUserByEmail(user.email);
-          
+
+       if (account?.provider === 'google') {
+          const { data } = await supabase.auth.getSession()
+            if (data.session) {
+              token.supabaseSession = data.session
+            }
+       }  
+
+
           if (!dbUser) {
             // Create UUID from user.id
             const properUuid = ensureUuid(user.id);
@@ -208,12 +220,30 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session, token }) {
-      // Ensure the session object is properly structured
-      if (!session.user) {
-        session.user = {};
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const { data } = await supabase
+        .from('User')
+        .select('*')
+        .eq('id', token.sub)
+        .single()
+    
+      session.user = {
+        id: token.sub,
+        email: token.email,
+        name: data?.name || token.name,
+        image: data?.image || token.picture
       }
-
-      if (session.user) {
+      
+      return session
+    }
+      // Ensure the session object is properly structured
+    
+      if (!session.user) {
+          session.user = {};
         // Ensure we use proper UUID format for the ID
         if (token.sub) {
           session.user.id = ensureUuid(token.sub);
@@ -250,18 +280,24 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async jwt({ token, user, account }) {
+     
+    }) 
       // Initial sign in
       if (user) {
         // Save the user info to the token
         token.id = ensureUuid(user.id);
         token.email = user.email;
         token.name = user.name;
+        token.exp = Math.floor(Date.now() / 1000) + (24 * 60 * 60);
         if (user.image) {
           token.picture = user.image;
         }
+        return token
+    } 
         
         // Set a proper expiration time (24 hours)
-        token.exp = Math.floor(Date.now() / 1000) + (24 * 60 * 60);
+        const SESSION_MAX_AGE = 30 * 60 // 30 minutes
+token.exp = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE
         console.log("JWT created with expiration:", new Date(token.exp * 1000).toISOString());
       } else if (token.exp) {
         // If token exists but no user data was passed, check expiration
