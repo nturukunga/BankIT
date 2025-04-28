@@ -49,8 +49,28 @@ export default function LoginPage() {
       }
 
       setSuccess("Login successful!")
-      // Redirect to dashboard
-      window.location.href = "/dashboard"
+      try {
+        const signInResult = await signIn("credentials", {
+          email: values.email,
+          password: values.password,
+          redirect: false
+        })
+        
+        if (signInResult?.error) {
+          setError("Invalid credentials")
+          return
+        }
+
+        // Check if user has cards
+        const cardsResponse = await fetch("/api/cards")
+        const cardsData = await cardsResponse.json()
+        
+        // Redirect based on whether user has cards
+        window.location.href = (!cardsData.cards || cardsData.cards.length === 0) ? "/cards" : "/dashboard"
+      } catch (error) {
+        console.error("Sign in error:", error)
+        setError("Failed to sign in")
+      }
     } catch (error) {
       setError("Something went wrong")
     }

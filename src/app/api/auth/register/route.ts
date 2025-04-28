@@ -39,17 +39,32 @@ export async function POST(req: Request) {
     }
     
     // Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    
-    if (authError) {
-      console.error("Supabase Auth Error:", authError)
-      return NextResponse.json({ 
-        success: false, 
-        message: authError.message || "Authentication failed" 
-      }, { status: 500 })
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      
+      if (authError) {
+        console.error("Supabase Auth Error:", authError)
+        return NextResponse.json({ 
+          success: false, 
+          message: "Failed to create account. Please try again." 
+        }, { status: 500 })
+      }
+
+      if (!authData?.user) {
+        return NextResponse.json({
+          success: false,
+          message: "No user data returned. Please try again."
+        }, { status: 500 })
+      }
+    } catch (error) {
+      console.error("Registration error:", error)
+      return NextResponse.json({
+        success: false,
+        message: "Service temporarily unavailable. Please try again later."
+      }, { status: 503 })
     }
     
     if (!authData.user) {

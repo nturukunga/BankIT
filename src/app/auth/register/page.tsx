@@ -50,8 +50,25 @@ export default function RegisterPage() {
       }
 
       setSuccess("Registration successful!")
-      // Redirect to login
-      window.location.href = "/auth/login"
+      try {
+        // Sign in after registration
+        const signInResult = await signIn("credentials", {
+          email: values.email,
+          password: values.password,
+          redirect: false
+        })
+        
+        if (signInResult?.error) {
+          setError("Failed to sign in after registration")
+          return
+        }
+
+        // New users always go to cards page first
+        window.location.href = "/cards"
+      } catch (error) {
+        console.error("Sign in error:", error)
+        setError("Failed to sign in after registration")
+      }
     } catch (error) {
       setError("Something went wrong")
     }

@@ -182,6 +182,8 @@ export default function CardsPage() {
         setShowCardForm(false)
         
         toast.success("Card added successfully")
+        // Redirect to dashboard after adding card
+        router.push('/dashboard')
       } else {
         const error = await response.json()
         toast.error(error.message || "Failed to add card")
@@ -511,18 +513,7 @@ export default function CardsPage() {
           </div>
         )}
         
-        {/* Proceed to Dashboard Button */}
-        <div className="flex justify-center pt-8">
-          <Button 
-            onClick={handleProceedToDashboard}
-            disabled={cards.length === 0 || isLoading}
-            className="bg-green-500 hover:bg-green-600 text-white px-8"
-            size="lg"
-          >
-            Proceed to Dashboard
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
+        
       </div>
       
       <style jsx global>{`

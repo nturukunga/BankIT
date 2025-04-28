@@ -34,49 +34,6 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for emergency bypass
-    const isEmergencyBypass = 
-      window.location.search.includes('bypass=true') || 
-      document.cookie.includes('emergency_bypass=true');
-    
-    if (isEmergencyBypass) {
-      console.log('Emergency bypass detected, skipping auth check');
-      // Create dummy session data for emergency access
-      if (status === 'unauthenticated') {
-        // Set minimal loading data
-        setCards([
-          {
-            id: 'emergency-1',
-            number: '4111 1111 1111 1111',
-            name: 'Emergency Access',
-            expiry: '12/99',
-            balance: 1000,
-            type: 'debit',
-          }
-        ]);
-        setRegularCards([
-          {
-            id: 'emergency-1',
-            number: '4111 1111 1111 1111',
-            name: 'Emergency Access',
-            expiry: '12/99', 
-            balance: 1000,
-            type: 'debit',
-          }
-        ]);
-        setTransactions([
-          {
-            id: 'emergency-tx-1',
-            amount: 1000,
-            date: new Date().toISOString(),
-            description: 'Emergency access credit',
-            type: 'income',
-          }
-        ]);
-        setIsLoading(false);
-        return;
-      }
-    }
     
     // Redirect to auth page if not authenticated
     if (status === 'unauthenticated') {

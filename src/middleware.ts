@@ -177,9 +177,18 @@ export async function middleware(request: NextRequest) {
           return response
         }
         
-        // Valid token and no loop detected, redirect to dashboard
-        console.log("Valid token on auth page, redirecting to dashboard")
-        const response = NextResponse.redirect(new URL("/dashboard", request.url))
+        // Check if user has any cards before redirecting to dashboard
+        const cardsResponse = await fetch(`${request.url}/api/cards`, {
+          headers: {
+            cookie: request.headers.get('cookie') || '',
+          }
+        })
+        const cardsData = await cardsResponse.json()
+        
+        // If no cards, redirect to cards page, otherwise dashboard
+        const redirectPath = (!cardsData.cards || cardsData.cards.length === 0) ? "/cards" : "/dashboard"
+        console.log(`Valid token on auth page, redirecting to ${redirectPath}`)
+        const response = NextResponse.redirect(new URL(redirectPath, request.url))
         response.cookies.set('last_redirect_time', now.toString(), { 
           maxAge: 10, 
           path: '/' 

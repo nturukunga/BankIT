@@ -547,36 +547,12 @@ export default function AuthPage() {
           </p>
 
           <div className="flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href="/auth">Go to Auth Page</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/dashboard">Go to Dashboard</Link>
-            </Button>
             <Button variant="outline" onClick={() => window.location.reload()}>
               Refresh Page
             </Button>
           </div>
           
-          {/* Emergency direct access button */}
-          {authAttempts > 2 && (
-            <div className="mt-6 p-4 bg-red-500/20 rounded-md">
-              <h3 className="text-white font-semibold mb-2">Emergency Access</h3>
-              <p className="text-gray-300 text-sm mb-3">
-                If you're still having authentication issues, use this emergency access button to bypass the normal auth flow.
-              </p>
-              <Button
-                className="w-full bg-red-500 hover:bg-red-600 text-white"
-                onClick={() => {
-                  // Set a cookie and navigate directly to dashboard
-                  document.cookie = "emergency_bypass=true; path=/; max-age=3600";
-                  window.location.href = "/dashboard?bypass=true";
-                }}
-              >
-                Emergency Dashboard Access
-              </Button>
-            </div>
-          )}
+          
         </div>
       </div>
       
