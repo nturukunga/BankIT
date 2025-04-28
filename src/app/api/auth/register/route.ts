@@ -7,10 +7,8 @@ import { z } from "zod"
 
 export async function POST(req: Request) {
   try {
-    // Parse request body
     const body = await req.json()
     
-    // Validate input data using Zod
     const validationResult = registrationSchema.safeParse(body)
     
     if (!validationResult.success) {
@@ -38,13 +36,16 @@ export async function POST(req: Request) {
       }, { status: 409 })
     }
     
-    // Create user in Supabase Auth
+    let authData;
+
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
       })
       
+      authData = data;
+
       if (authError) {
         console.error("Supabase Auth Error:", authError)
         return NextResponse.json({ 
@@ -74,13 +75,10 @@ export async function POST(req: Request) {
       }, { status: 500 })
     }
     
-    // Hash password for database storage - ensures we never store plaintext passwords
     const hashedPassword = await hash(password, 12)
     
-    // Get proper UUID
     const userId = ensureUuid(authData.user.id)
     
-    // Create user in database
     const { data: newUser, error: dbError } = await supabase
       .from("User")
       .insert({
