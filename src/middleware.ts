@@ -23,7 +23,7 @@ function getRateLimitStatus(ip: string): { limited: boolean, remaining: number }
   
   // Get requests and filter out old ones
   const requests = rateLimit.store.get(ip) || []
-  const recentRequests = requests.filter(timestamp => timestamp > windowStart)
+  const recentRequests: number[] = requests.filter((timestamp: number) => timestamp > windowStart)
   
   // Update store with recent requests
   rateLimit.store.set(ip, [...recentRequests, now])
@@ -136,7 +136,7 @@ export async function middleware(request: NextRequest) {
     })
 
     // Check if token is valid and not expired
-    const isValidToken = token && token.exp && (Date.now() < token.exp * 1000)
+    const isValidToken = token && token.exp && (Date.now() < Number(token.exp) * 1000)
 
     // Redirect to login if accessing a protected route without authentication
     if (!isValidToken && !isPublicPath) {

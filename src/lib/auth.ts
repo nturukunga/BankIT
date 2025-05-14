@@ -1,4 +1,4 @@
-import { NextAuthOptions } from "next-auth"
+import { NextAuthOptions, Session } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { supabase } from "./supabase"
@@ -10,6 +10,12 @@ import { getToken } from "next-auth/jwt"
 
 // Mark as dynamic to avoid build issues
 export const dynamic = 'force-dynamic'
+
+declare module "next-auth" {
+  interface Session {
+    authenticated?: boolean;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development', // Enable debug in development mode
@@ -226,7 +232,7 @@ export const authOptions: NextAuthOptions = {
 
       // Ensure the session object is properly structured
       if (!session.user) {
-        session.user = {};
+        session.user = { id: "" };
       }
 
       // Ensure we use proper UUID format for the ID
@@ -245,7 +251,7 @@ export const authOptions: NextAuthOptions = {
       };
 
       // Add validation timestamp and authentication flag
-      session.expires = token.exp ? new Date(token.exp * 1000).toISOString() : undefined;
+      session.expires = token.exp ? new Date(Number(token.exp) * 1000).toISOString() : "";
       session.authenticated = true;
 
       console.log("Session callback completed, session:", 
@@ -268,7 +274,7 @@ export const authOptions: NextAuthOptions = {
         // Set a proper expiration time (30 minutes)
         const SESSION_MAX_AGE = 30 * 60 
         token.exp = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE
-        console.log("JWT created with expiration:", new Date(token.exp * 1000).toISOString());
+        console.log("JWT created with expiration:", new Date(Number(token.exp) * 1000).toISOString());
       } else if (token.exp) {
         // If token exists but no user data was passed, check expiration
         const expiresAt = token.exp as number;

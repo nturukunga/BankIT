@@ -1,17 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Create a Supabase client with anon key
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-// Create a client with the anon key
-export const supabase = supabaseUrl && supabaseAnonKey ? 
-  createClient(supabaseUrl, supabaseAnonKey) : 
-  null;
-
-if (!supabase) {
-  console.error('Supabase client could not be initialized - missing URL or key');
-}
+import { supabase } from './supabase';
 
 /**
  * Create a new user in Supabase Auth
@@ -22,6 +9,9 @@ export async function createUserWithEmailAndPassword(
   userData: { name: string; image?: string }
 ) {
   try {
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized. Check your environment variables.');
+    }
     // Create the user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -49,6 +39,9 @@ export async function createUserWithEmailAndPassword(
  */
 export async function signInWithEmailAndPassword(email: string, password: string) {
   try {
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized. Check your environment variables.');
+    }
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -67,6 +60,9 @@ export async function signInWithEmailAndPassword(email: string, password: string
  */
 export async function getUserByEmail(email: string) {
   try {
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized. Check your environment variables.');
+    }
     const { data, error } = await supabase
       .from('User')
       .select('*')
@@ -92,6 +88,9 @@ export async function getUserByEmail(email: string) {
  */
 export async function getUserById(id: string) {
   try {
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized. Check your environment variables.');
+    }
     const { data, error } = await supabase
       .from('User')
       .select('*')
@@ -122,6 +121,9 @@ export async function createUserRecord(user: any) {
     if (existingUser) return existingUser;
     
     // Create user in database
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized. Check your environment variables.');
+    }
     const { data, error } = await supabase
       .from('User')
       .insert({
